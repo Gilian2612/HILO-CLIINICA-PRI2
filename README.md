@@ -139,63 +139,50 @@ Lo que gana la atención: el médico ve a tiempo la **alergia grave a la penicil
 
 ## Stack propuesto
 
-### Frontend (MVP)
+**Toda la lógica vive en el backend (Python).** El frontend solo pinta las pantallas y llama a la API. Así, lo que se explica y se defiende (identificar a la paciente, pedir permiso, traducir a FHIR, auditar) está en un solo lugar y en un lenguaje que el equipo domina.
+
+### Backend: el núcleo
 
 | Capa | Tecnología | Por qué |
 |---|---|---|
-| Lenguaje | **TypeScript** | Tipos estrictos para el dominio y los recursos FHIR |
-| Framework UI | **React 18** | Es lo que usa el boceto, así se reproduce fiel |
-| Build / dev server | **Vite** | Arranque rápido y build estática lista para desplegar |
-| Animaciones | **Framer Motion** | El token que recorre el BPMN y las transiciones de pantalla del boceto |
-| Iconos | **lucide-react** | Los mismos iconos del boceto |
-| Tipos FHIR | **@types/fhir** (R4) | Valida al compilar que `Consent`, `AuditEvent`, `Bundle`, etc. sean FHIR válido |
-| Estilos | **CSS con variables** (`tokens.css`) | Se reutilizan los tokens del boceto (`--ink`, `--coral`, `--sky`…) sin depender de un framework |
-| Fuentes | **@fontsource** (Urbanist, Fraunces) | Reemplaza las fuentes incrustadas en base64 del boceto |
-| Diagrama BPMN | **SVG propio** a partir de `process/model.ts` | El modelo del proceso es una sola fuente de verdad: lo usan el motor y el dibujo |
+| Lenguaje | **Python 3.11+** | El lenguaje que domina el equipo |
+| API | **FastAPI** + **Uvicorn** | Rápida de escribir, valida datos y genera documentación en `/docs` |
+| Recursos FHIR R4 | **fhir.resources** | Valida que `Consent`, `AuditEvent`, `Bundle`, etc. sean FHIR válido |
+| Tests | **pytest** + **httpx** (`TestClient`) | Tests unitarios de cada módulo y tests de la API |
+| Persistencia (fase posterior) | **SQLite → PostgreSQL** | Consentimientos, auditoría e índice maestro. En el MVP basta con memoria |
+| Fuentes de la red (fase posterior) | **HAPI FHIR** en Docker | Servidores FHIR reales que hacen de EPS, IPS y laboratorio |
 
-### Calidad
+### Frontend: solo interfaz, idéntica al boceto
 
-| Uso | Herramienta |
-|---|---|
-| Tests unitarios (dominio y motor del proceso) | **Vitest** |
-| Tests de componentes | **React Testing Library** |
-| Tests end-to-end (los 3 escenarios) | **Playwright** |
-| Lint y formato | **ESLint** + **Prettier** |
-| CI | **GitHub Actions** (lint, tests y build en cada PR) |
+| Capa | Tecnología | Por qué |
+|---|---|---|
+| UI | **React + TypeScript + Vite** | El boceto está hecho en React, así se reproduce igual |
+| Estilos | **El CSS del boceto** (mismos tokens: `--ink`, `--coral`, `--sky`…) | Los mismos colores, tipografías y estructura |
+| Animaciones e iconos | **Framer Motion**, **lucide-react** | Las mismas librerías del boceto |
+| Conexión con el backend | `fetch` a `/api/...` (proxy de Vite al puerto 8000) | El front no toma decisiones: pide y muestra |
 
-### Backend (fase posterior, opcional)
-
-| Componente | Tecnología |
-|---|---|
-| Fuentes simuladas de la red (EPS, IPS, laboratorio) | **HAPI FHIR** en **Docker** |
-| API de Hilo Clínico (MPI, consentimiento, adaptadores, RDA) | **Node.js + Fastify** (TypeScript) |
-| Persistencia (consentimientos, auditoría, índice maestro) | **PostgreSQL** |
-| Autorización | **SMART on FHIR** (OAuth 2.0) |
-
-### Arquitectura del código
+### Cómo se reparte la lógica en el backend
 
 ```
-src/
-  domain/        lógica pura, sin React (100% testeable)
-    fhir/          builders: Consent, AuditEvent, RDA, Bundle transaction
-    sources/       datos ficticios en su formato nativo (tabla, JSON, CSV)
-    adapters/      cada fuente → recursos FHIR
-    mpi.ts         índice maestro de pacientes
-    consent.ts     reglas de permiso por categoría
-    timeline.ts    línea de tiempo clínica
-  process/
-    model.ts       nodos, carriles y flujos del BPMN
-    engine.ts      máquina de estados (avanzar, retroceder, escenarios)
-  ui/
-    simulation/    visor del médico, app de la paciente, "La capa por dentro"
-    bpmn/          diagrama SVG con el token animado
-    impact/        vista de impacto en salud y ODS
-  styles/
-    tokens.css
-tests/           unitarios, componentes y e2e
+backend/app/
+  actores.py  el médico de urgencias y su IPS (datos ficticios)
+  sources/    fuentes simuladas en su formato nativo: eps.py (tabla), ips.py (JSON), lab.py (CSV)
+  mpi/        índice maestro: normalizar_documento(), buscar() → PacienteMaestro + identidades
+  adapters/   eps.py, ips.py, lab.py: cada fuente → recursos FHIR R4 validados con fhir.resources
+  consent/    categorias.py (qué habilita cada categoría), gestor.py (crear, permite, revocar),
+              consulta.py (consultar_red: 200 si hay permiso, 403 si no, sin tocar la fuente)
+  fhir/       [pendiente] constructores: AuditEvent, RDA, Bundle transaction
+  audit/      [pendiente] registro de AuditEvent por cada paso
+  process/    [pendiente] modelo BPMN (nodos y flujos) + máquina de estados
+  api/        [pendiente] rutas FastAPI que exponen el proceso
+  main.py     punto de entrada (hoy solo /api/health)
+backend/tests/
+  test_sources.py  test_mpi.py  test_adapters.py  test_consent.py  test_health.py
 ```
 
-La regla es que **el dominio no depende de la UI**. MPI, consentimiento, adaptadores y motor son funciones puras que se prueban solas. Así, en la fase de backend se pueden mover al servidor sin reescribirlas.
+Cada módulo se construyó con TDD: primero sus tests en `backend/tests/`, luego el código mínimo que los pone en verde.
+
+Las dependencias van en un solo sentido: `api → process → (mpi, consent, adapters, audit) → (sources, fhir)`. Ningún módulo de lógica depende de FastAPI, así que se prueban con pytest sin levantar el servidor.
 
 ---
 
@@ -203,6 +190,28 @@ La regla es que **el dominio no depende de la UI**. MPI, consentimiento, adaptad
 
 ```
 assets/      diagrama BPMN (PNG y .bpmn editable)
-boceto.html  prototipo de referencia (fuente de verdad funcional)
-src/         código de la reconstrucción
+backend/     API en Python (FastAPI): toda la lógica + tests
+frontend/    interfaz en React (réplica visual del boceto)
+boceto.html  prototipo de referencia (fuente de verdad funcional y visual)
+```
+
+## Cómo ejecutar
+
+**Backend** (puerto 8000):
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload     # API en http://localhost:8000/docs
+pytest                            # tests
+```
+
+**Frontend** (puerto 5173, en otra terminal):
+
+```bash
+cd frontend
+npm install
+npm run dev                       # http://localhost:5173
 ```
