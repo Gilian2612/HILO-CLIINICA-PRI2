@@ -171,14 +171,46 @@ backend/app/
   adapters/   eps.py, ips.py, lab.py: cada fuente → recursos FHIR R4 validados con fhir.resources
   consent/    categorias.py (qué habilita cada categoría), gestor.py (crear, permite, revocar),
               consulta.py (consultar_red: 200 si hay permiso, 403 si no, sin tocar la fuente)
-  fhir/       [pendiente] constructores: AuditEvent, RDA, Bundle transaction
-  audit/      [pendiente] registro de AuditEvent por cada paso
-  process/    [pendiente] modelo BPMN (nodos y flujos) + máquina de estados
-  api/        [pendiente] rutas FastAPI que exponen el proceso
-  main.py     punto de entrada (hoy solo /api/health)
+  audit/      registro.py: EventoAuditoria (quién, qué, detalle, resultado, hora) → AuditEvent FHIR
+  fhir/       rda.py (Bundle document), envio.py (Bundle transaction + Provenance),
+              linea_tiempo.py (lo que ve el médico), red.py (endpoints FHIR de la red de IPS)
+  process/    modelo.py (18 nodos, 3 carriles, 2 pools, 19 flujos, compuertas en siguiente()),
+              motor.py (máquina de estados: actuar / completar / llegar / paso / correr / revocar)
+  api/        rutas.py (endpoints), esquemas.py (cuerpos y serialización a JSON),
+              almacen.py (simulaciones en memoria + historial para el paso atrás)
+  main.py     punto de entrada
 backend/tests/
-  test_sources.py  test_mpi.py  test_adapters.py  test_consent.py  test_health.py
+  test_sources.py  test_mpi.py  test_adapters.py  test_consent.py  test_audit.py
+  test_fhir.py  test_linea_tiempo.py  test_process.py  test_api.py  test_health.py
 ```
+
+### Endpoints
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /api/proceso` | Modelo BPMN (carriles, pools, nodos con coordenadas y ayuda, flujos, mensajes, escenarios) |
+| `GET /api/catalogo` | Fuentes de la red, categorías de consentimiento, médico de turno y red de IPS |
+| `POST /api/simulaciones` | Crea una simulación `{escenario, inicio?}` → estado completo |
+| `GET /api/simulaciones/{id}` | Estado completo: nodo, estado, visitados, flujos y `ctx` (MPI, consent, log, recursos, línea de tiempo, RDA, envío, auditoría) |
+| `POST /api/simulaciones/{id}/paso` | Hace la transición que toque |
+| `POST /api/simulaciones/{id}/actuar` | El médico o la paciente actúan: `{documento, emergencia}` · `{decision, categorias}` · `{nota, destino}` |
+| `PATCH /api/simulaciones/{id}/borrador` | Cambia lo escrito en pantalla sin mover el proceso |
+| `POST /api/simulaciones/{id}/revocar` | La paciente revoca el acceso |
+| `POST /api/simulaciones/{id}/atras` | Vuelve al estado anterior |
+| `DELETE /api/simulaciones/{id}` | Borra la simulación |
+
+Los recursos FHIR viajan como JSON estándar (`resourceType`, …), así que el panel "Recurso FHIR" del frontend los muestra tal cual. La documentación interactiva está en `http://localhost:8000/docs`.
+
+### Estados del motor
+
+| Estado | Significa | Sale con |
+|---|---|---|
+| `waiting` | En una tarea de usuario (`t_buscar`, `t_resp`, `t_atender`) | `actuar(sim, **datos)` |
+| `running` | En una tarea de servicio o compuerta; su efecto ya se ejecutó | `completar(sim)` |
+| `moving` | El token va por un flujo (el frontend lo anima) | `llegar(sim)` |
+| `ended` | En `end_ok` o `end_no` | — |
+
+`paso(sim)` hace la transición que toque (en `waiting` usa la respuesta del escenario) y `correr(escenario)` recorre el proceso completo. El reloj de la simulación avanza unos segundos por nodo, así la auditoría y los `Consent` tienen horas coherentes sin depender del reloj real.
 
 Cada módulo se construyó con TDD: primero sus tests en `backend/tests/`, luego el código mínimo que los pone en verde.
 
