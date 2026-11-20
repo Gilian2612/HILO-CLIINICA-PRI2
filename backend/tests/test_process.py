@@ -13,6 +13,7 @@ from app.process import (
     nueva_simulacion,
     paso,
     revocar_acceso,
+    ruta,
     siguiente,
 )
 
@@ -204,3 +205,33 @@ def test_el_reloj_avanza_con_cada_paso_del_proceso():
 @pytest.mark.parametrize("escenario", ["consentimiento", "emergencia", "rechazo"])
 def test_correr_termina_siempre(escenario):
     assert correr(escenario, INICIO).estado == "ended"
+
+
+# Ruta prevista (la barra de pasos del frontend)
+
+RUTA_CONSENTIMIENTO = [
+    "t_buscar", "t_mpi", "g_urg", "t_solic", "t_resp", "g_aut",
+    "t_fhir", "t_atender", "g_dest", "t_guardar", "t_cerrar", "end_ok",
+]
+
+
+def test_ruta_al_inicio_preve_el_camino_del_escenario_sin_start_ni_uniones():
+    assert ruta(nueva_simulacion("consentimiento", INICIO)) == RUTA_CONSENTIMIENTO
+
+
+def test_ruta_sigue_lo_que_el_medico_tiene_escrito_antes_de_buscar():
+    sim = nueva_simulacion("consentimiento", INICIO)
+    sim.ctx.borrador.emergencia = True
+    sim.ctx.borrador.destino = "ips"
+    camino = ruta(sim)
+    assert "t_emerg" in camino and "t_solic" not in camino
+    assert "t_envio" in camino and "t_guardar" not in camino
+
+
+def test_ruta_del_rechazo_termina_en_end_no():
+    assert ruta(nueva_simulacion("rechazo", INICIO))[-1] == "end_no"
+
+
+def test_ruta_al_terminar_es_lo_recorrido():
+    sim = correr("emergencia", INICIO)
+    assert ruta(sim) == [n for n in sim.visitados if n not in ("start", "g_join", "g_dj")]

@@ -335,3 +335,24 @@ def _efecto(sim: Simulacion, nodo: str) -> None:
                 sim, _avanzar(sim, 2), "Hilo Clínico", "RDA enviado al IHCE",
                 "Resumen Digital de Atención recibido (envío simulado)", "ok",
             )
+
+
+_OCULTOS_EN_RUTA = ("start", "g_join", "g_dj")
+
+
+def ruta(sim: Simulacion) -> list[str]:
+    """Lo recorrido más el camino previsto hasta el fin, sin el inicio ni las uniones.
+
+    Mientras el médico no ha buscado, las compuertas se resuelven con lo que tiene escrito
+    (borrador); la decisión de la paciente, con la respuesta del escenario.
+    """
+    ctx = sim.ctx
+    emergencia = ctx.emergencia if ctx.mpi else ctx.borrador.emergencia
+    decision = ctx.decision or ("denied" if sim.escenario == "rechazo" else "granted")
+    destino = ctx.destino if "g_dest" in sim.visitados else ctx.borrador.destino
+    camino = list(sim.visitados)
+    nodo = siguiente(camino[-1], emergencia=emergencia, decision=decision, destino=destino)
+    while nodo:
+        camino.append(nodo)
+        nodo = siguiente(nodo, emergencia=emergencia, decision=decision, destino=destino)
+    return [n for n in camino if n not in _OCULTOS_EN_RUTA]

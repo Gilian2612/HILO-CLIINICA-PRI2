@@ -206,3 +206,9 @@ def test_borrar_una_simulacion(client):
     sid = crear(client)["id"]
     assert client.delete(f"/api/simulaciones/{sid}").status_code == 204
     assert client.get(f"/api/simulaciones/{sid}").status_code == 404
+
+
+def test_la_simulacion_incluye_la_ruta_prevista(client):
+    sim = crear(client, "rechazo")
+    assert sim["ruta"][0] == "t_buscar"
+    assert sim["ruta"][-1] == "end_no"

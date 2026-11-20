@@ -30,6 +30,7 @@ from app.process.motor import (
     nueva_simulacion,
     paso,
     revocar_acceso,
+    ruta,
 )
 
 __all__ = [
@@ -54,5 +55,6 @@ __all__ = [
     "nueva_simulacion",
     "paso",
     "revocar_acceso",
+    "ruta",
     "siguiente",
 ]

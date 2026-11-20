@@ -12,7 +12,7 @@ from fhir.resources.R4B.resource import Resource
 from pydantic import BaseModel
 
 from app.fhir import LineaTiempo
-from app.process import Escenario, Simulacion
+from app.process import Escenario, Simulacion, ruta
 
 # Peticiones
 
@@ -85,6 +85,7 @@ def serializar_simulacion(id: str, sim: Simulacion, puede_volver: bool) -> dict[
         "estado": sim.estado,
         "visitados": list(sim.visitados),
         "flujos": list(sim.flujos),
+        "ruta": ruta(sim),
         "en_movimiento": asdict(sim.en_movimiento) if sim.en_movimiento else None,
         "puede_volver": puede_volver,
         "ctx": {

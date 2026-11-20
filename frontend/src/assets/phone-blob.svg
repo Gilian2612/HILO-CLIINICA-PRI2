@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="535.5" height="306.5" viewBox="0 0 535.5 306.5">
+<defs>
+<clipPath id="clip-0">
+<path clip-rule="nonzero" d="M 0.1875 0 L 534.8125 0 L 534.8125 306 L 0.1875 306 Z M 0.1875 0 "/>
+</clipPath>
+<clipPath id="clip-1">
+<path clip-rule="nonzero" d="M -34.21875 6.859375 L 518.285156 -64.464844 L 563.054688 282.335938 L 10.546875 353.660156 Z M -34.21875 6.859375 "/>
+</clipPath>
+<clipPath id="clip-2">
+<path clip-rule="nonzero" d="M 1 1 L 534 1 L 534 305 L 1 305 Z M 1 1 "/>
+</clipPath>
+<clipPath id="clip-3">
+<path clip-rule="nonzero" d="M -34.21875 6.859375 L 518.285156 -64.464844 L 563.054688 282.335938 L 10.546875 353.660156 Z M -34.21875 6.859375 "/>
+</clipPath>
+<clipPath id="clip-4">
+<path clip-rule="nonzero" d="M 518.554688 -64.5 L -33.953125 6.824219 L 10.816406 353.625 L 563.320312 282.300781 Z M 518.554688 -64.5 "/>
+</clipPath>
+<clipPath id="clip-5">
+<path clip-rule="nonzero" d="M 518.554688 -64.5 L -33.953125 6.824219 L 10.816406 353.625 L 563.320312 282.300781 Z M 518.554688 -64.5 "/>
+</clipPath>
+<clipPath id="clip-6">
+<rect x="0" y="0" width="535" height="306"/>
+</clipPath>
+<g id="source-5" clip-path="url(#clip-6)">
+<g clip-path="url(#clip-2)">
+<g clip-path="url(#clip-3)">
+<g clip-path="url(#clip-4)">
+<g clip-path="url(#clip-5)">
+<path fill-rule="nonzero" fill="rgb(85.879517%, 90.19928%, 97.24884%)" fill-opacity="1" d="M 155.140625 23.9375 C 203.554688 49.457031 260.957031 50.894531 310.714844 28.101562 C 322.710938 22.609375 336.132812 18.339844 350.941406 16.265625 C 441.839844 3.550781 537.25 80.296875 533.441406 141.371094 C 529.773438 200.195312 434.710938 233.964844 362.953125 259.453125 C 268.125 293.136719 146.882812 336.203125 68.953125 269.859375 C -8.808594 203.65625 -20.796875 47.792969 40.351562 10.359375 C 67.4375 -6.222656 109.644531 -0.0390625 155.140625 23.9375 Z M 155.140625 23.9375 "/>
+</g>
+</g>
+</g>
+</g>
+</g>
+</defs>
+<g clip-path="url(#clip-0)">
+<g clip-path="url(#clip-1)">
+<use xlink:href="#source-5" transform="matrix(1, 0, 0, 1, -0.00000000000003908, -0.00000000000007816)"/>
+</g>
+</g>
+</svg>

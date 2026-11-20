@@ -1,6 +1,10 @@
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: #f0f6ff;
-  color: #3b365f;
+/* Fuentes del boceto (Urbanist y Fraunces con ejes SOFT/WONK/opsz), desde npm en vez de base64. */
+@import '@fontsource-variable/urbanist';
+@import '@fontsource-variable/fraunces/full.css';
+@import './styles/boceto.css';
+
+/* Fontsource registra las fuentes como "… Variable"; se anteponen a las del boceto. */
+:root {
+  --display: 'Fraunces Variable', 'Fraunces', Georgia, 'Times New Roman', serif;
+  --body: 'Urbanist Variable', 'Urbanist', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
