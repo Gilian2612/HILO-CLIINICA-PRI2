@@ -15,7 +15,9 @@ TEXTO = {"H": "Alto", "L": "Bajo", "N": "Normal"}
 def a_fhir(paciente: PacienteMaestro) -> list[Resource]:
     filas = [f for f in lab.filas() if normalizar_documento(f["doc_paciente"]) == paciente.documento]
     recursos: list[Resource] = []
-    for n, fila in enumerate(filas, start=1):
+    por_orden: dict[str, int] = {}
+    for fila in filas:
+        n = por_orden[fila["orden"]] = por_orden.get(fila["orden"], 0) + 1
         valor, ref_min, ref_max = float(fila["valor"]), float(fila["ref_min"]), float(fila["ref_max"])
         codigo = interpretar(valor, ref_min, ref_max)
         recursos.append(
@@ -26,13 +28,16 @@ def a_fhir(paciente: PacienteMaestro) -> list[Resource]:
                 code={"text": fila["analito"]},
                 subject=referencia_paciente(paciente),
                 effectiveDateTime=de_fecha_hora_local(fila["fecha_hora"]),
-                valueQuantity={"value": valor, "unit": fila["unidad"]},
+                # FHIR no admite cadenas vacías: el pH no tiene unidad.
+                valueQuantity={"value": valor, **({"unit": fila["unidad"]} if fila["unidad"] else {})},
                 referenceRange=[{"low": {"value": ref_min}, "high": {"value": ref_max}}],
                 interpretation=[
                     {"coding": [{"system": INTERPRETACION, "code": codigo}], "text": TEXTO[codigo]}
                 ],
                 performer=[{"display": FUENTES["lab"].nombre}],
                 identifier=[{"value": fila["orden"]}],
+                # La orden de la que sale el analito; su nombre es el título del item del visor.
+                basedOn=[{"identifier": {"value": fila["orden"]}, "display": fila["examen"]}],
             )
         )
     return recursos

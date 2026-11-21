@@ -76,7 +76,7 @@ export function Capa({
                   <tr key={i} className={p.status >= 400 ? 'is-denied' : ''}>
                     <td>
                       {p.fuente === 'dest' ? (
-                        <span className="source-tag">Sistema de la {catalogo.medico.organizacion}</span>
+                        <span className="source-tag">Sistema de la {sim.medico.organizacion}</span>
                       ) : (
                         <EtiquetaFuente fuente={p.fuente} catalogo={catalogo} />
                       )}

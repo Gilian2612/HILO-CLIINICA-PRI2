@@ -127,6 +127,20 @@ Paciente de ejemplo: **Mariana Sofía López Castro**, CC 1.032.456.789. Llega a
 
 Lo que gana la atención: el médico ve a tiempo la **alergia grave a la penicilina** y los **exámenes del 7 de noviembre**, así que no repite el hemograma ni la PCR.
 
+### Más casos de ejemplo
+
+Además de Mariana y Jorge hay **cinco pacientes más**, cada uno atendido por un médico de urgencias de una clínica distinta de la red. El médico se elige en la cabecera (**Atiende**) o con `medico` al crear la simulación. Cédulas, clínicas, médicos y qué muestra cada caso: **[CASOS.md](CASOS.md)**.
+
+| Cédula | Paciente | Clínica | Médico |
+|---|---|---|---|
+| 1032456789 | Mariana Sofía López Castro | Clínica del Pacífico (Cali) | Dr. Mateo Vargas |
+| 79845120 | Jorge Eliecer Pardo Ruiz | Clínica del Pacífico (Cali) | Dr. Mateo Vargas |
+| 1017234567 | Carlos Andrés Gómez Restrepo | Fundación Santa Fe de Bogotá | Dra. Catalina Ríos |
+| 52987654 | Luisa Fernanda Rojas Herrera | Centro Médico Chapinero | Dr. Julián Ortega |
+| 1144056789 | Andrés Felipe Martínez Ospina | Hospital Simón Bolívar | Dr. Sebastián Mejía |
+| 1000345678 | Valentina Ruiz Quintero | Clínica de Marly | Dra. Natalia Herrera |
+| 19456321 | Héctor Julio Cárdenas Pinzón | Fundación Clínica Cardioinfantil | Dra. Paula Cifuentes |
+
 ---
 
 ## Vistas del prototipo
@@ -189,8 +203,8 @@ backend/tests/
 | Método y ruta | Qué hace |
 |---|---|
 | `GET /api/proceso` | Modelo BPMN (carriles, pools, nodos con coordenadas y ayuda, flujos, mensajes, escenarios) |
-| `GET /api/catalogo` | Fuentes de la red, categorías de consentimiento, médico de turno y red de IPS |
-| `POST /api/simulaciones` | Crea una simulación `{escenario, inicio?}` → estado completo |
+| `GET /api/catalogo` | Fuentes de la red, categorías de consentimiento, médico de turno, `medicos`, `casos` y red de IPS |
+| `POST /api/simulaciones` | Crea una simulación `{escenario, inicio?, medico?}` → estado completo (incluye `medico`); médico desconocido → 422 |
 | `GET /api/simulaciones/{id}` | Estado completo: nodo, estado, visitados, flujos y `ctx` (MPI, consent, log, recursos, línea de tiempo, RDA, envío, auditoría) |
 | `POST /api/simulaciones/{id}/paso` | Hace la transición que toque |
 | `POST /api/simulaciones/{id}/actuar` | El médico o la paciente actúan: `{documento, emergencia}` · `{decision, categorias}` · `{nota, destino}` |

@@ -21,7 +21,7 @@ function pantalla(sim: Simulacion): Pantalla {
 
 export function Telefono({ sim, catalogo, control }: { sim: Simulacion; catalogo: Catalogo; control: ControlSimulacion }) {
   const p = pantalla(sim)
-  const { medico } = catalogo
+  const { medico } = sim
   const nombre = sim.ctx.mpi?.paciente.nombres.split(' ')[0] ?? 'Mariana'
   const consultas = sim.ctx.auditoria.filter((a) => a.accion.startsWith('Consulta a') && a.resultado === 'ok')
 
@@ -167,7 +167,7 @@ function Registro({ items, titulo = 'Qué se ha consultado' }: { items: EventoAu
 
 function Solicitud({ sim, catalogo, control }: { sim: Simulacion; catalogo: Catalogo; control: ControlSimulacion }) {
   const { categorias } = sim.ctx.borrador
-  const { medico } = catalogo
+  const { medico } = sim
   const alternar = (id: string) =>
     control.editarBorrador({
       categorias: categorias.includes(id) ? categorias.filter((c) => c !== id) : [...categorias, id],

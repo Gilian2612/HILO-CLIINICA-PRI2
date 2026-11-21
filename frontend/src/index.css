@@ -3,6 +3,7 @@
 @import '@fontsource-variable/fraunces/full.css';
 @import './styles/boceto.css';
 @import './styles/tema-azul.css';
+@import './styles/medicos.css';
 
 /* Fontsource registra las fuentes como "… Variable"; se anteponen a las del boceto. */
 :root {

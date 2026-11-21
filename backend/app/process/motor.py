@@ -18,10 +18,11 @@ from fhir.resources.R4B.bundle import Bundle
 from fhir.resources.R4B.consent import Consent
 from fhir.resources.R4B.resource import Resource
 
-from app.actores import MEDICO
+from app.actores import MEDICO, Profesional, medico_por_id
+from app.casos import CASOS, caso_de
 from app.audit import EventoAuditoria, Resultado, registrar
 from app.consent import TODAS, Peticion, consultar_red, crear_consentimiento, revocar
-from app.fhir import ENDPOINT_IPS, LineaTiempo, crear_envio_ips, crear_rda, linea_de_tiempo
+from app.fhir import LineaTiempo, endpoint_de, crear_envio_ips, crear_rda, linea_de_tiempo
 from app.mpi import DocumentoCorto, PacienteNoEncontrado, ResultadoBusqueda, buscar
 from app.process.modelo import NODOS, flujo_entre, siguiente
 from app.sources import FUENTES
@@ -93,12 +94,19 @@ class Simulacion:
     flujos: list[str]
     ctx: Contexto
     en_movimiento: Movimiento | None = None
+    medico: Profesional = MEDICO  # quien atiende hoy (se elige al crear la simulación)
 
     def ahora(self) -> datetime:
         return self.inicio + timedelta(seconds=self.ctx.reloj)
 
 
-def nueva_simulacion(escenario: Escenario, inicio: datetime | None = None) -> Simulacion:
+def nueva_simulacion(
+    escenario: Escenario, inicio: datetime | None = None, medico: str | None = None
+) -> Simulacion:
+    """Arranca en t_buscar. `medico` es un id de app.actores.MEDICOS; None = Dr. Mateo Vargas."""
+    profesional = MEDICO if medico is None else medico_por_id(medico)
+    if profesional is None:
+        raise ValueError(f"Médico desconocido: {medico}")
     return Simulacion(
         escenario=escenario,
         inicio=inicio or datetime.now(ZONA_COLOMBIA),
@@ -106,7 +114,13 @@ def nueva_simulacion(escenario: Escenario, inicio: datetime | None = None) -> Si
         estado="waiting",
         visitados=["start", "t_buscar"],
         flujos=["f1"],
-        ctx=Contexto(borrador=Borrador(emergencia=escenario == "emergencia")),
+        ctx=Contexto(
+            borrador=Borrador(
+                documento=_documento_del_caso(profesional),
+                emergencia=escenario == "emergencia",
+            )
+        ),
+        medico=profesional,
     )
 
 
@@ -131,6 +145,7 @@ def actuar(sim: Simulacion, **payload) -> Simulacion:
             return sim
         ctx.error_busqueda = None
         ctx.emergencia = payload.get("emergencia", borrador.emergencia)
+        _sugerir_nota(borrador, ctx.mpi.paciente.documento)
 
     elif sim.nodo == "t_resp":
         paciente = ctx.mpi.paciente
@@ -139,7 +154,9 @@ def actuar(sim: Simulacion, **payload) -> Simulacion:
         if decision == "granted":
             hora = _avanzar(sim, 9)
             ctx.decision, ctx.solicitud = "granted", "granted"
-            ctx.consent = crear_consentimiento(paciente, categorias, "paciente", hora)
+            ctx.consent = crear_consentimiento(
+                paciente, categorias, "paciente", hora, medico=sim.medico
+            )
             _auditar(
                 sim, hora, paciente.nombre, "Autorización concedida",
                 f"Por 24 horas: {len(categorias)} de {len(TODAS)} tipos de información", "ok",
@@ -256,22 +273,22 @@ def _auditar(
 
 def _efecto(sim: Simulacion, nodo: str) -> None:
     """Lo que Hilo Clínico hace al llegar a cada nodo de servicio (o de fin)."""
-    ctx = sim.ctx
+    ctx, medico = sim.ctx, sim.medico
     paciente = ctx.mpi.paciente if ctx.mpi else None
 
     match nodo:
         case "t_mpi":
             _auditar(
-                sim, _avanzar(sim, 2), MEDICO.nombre, "Búsqueda en índice maestro",
+                sim, _avanzar(sim, 2), medico.nombre, "Búsqueda en índice maestro",
                 f"{paciente.documento_label}: {len(ctx.mpi.identidades)} registros unidos en 1 paciente",
                 "ok",
             )
 
         case "t_emerg":
             hora = _avanzar(sim, 2)
-            ctx.consent = crear_consentimiento(paciente, TODAS, "emergencia", hora)
+            ctx.consent = crear_consentimiento(paciente, TODAS, "emergencia", hora, medico=sim.medico)
             _auditar(
-                sim, hora, MEDICO.nombre, "Acceso de emergencia abierto",
+                sim, hora, medico.nombre, "Acceso de emergencia abierto",
                 "Urgencia vital declarada. Acceso por 24 horas, sin autorización previa.", "warn",
             )
 
@@ -279,7 +296,7 @@ def _efecto(sim: Simulacion, nodo: str) -> None:
             ctx.solicitud = "pending"
             _auditar(
                 sim, _avanzar(sim, 2), "Gestor de consentimiento", "Solicitud enviada a la paciente",
-                f"{MEDICO.nombre} pide ver la historia de {paciente.nombres}", "ok",
+                f"{medico.nombre} pide ver la historia de {paciente.nombres}", "ok",
             )
 
         case "end_no":
@@ -297,7 +314,7 @@ def _efecto(sim: Simulacion, nodo: str) -> None:
                 entregados = sum(1 for p in resultado.log if p.fuente == fuente for _ in range(p.cantidad))
                 bloqueadas = sum(1 for p in resultado.log if p.fuente == fuente and p.status == 403)
                 if entregados:
-                    detalle = f"{entregados} recursos entregados a {MEDICO.nombre}"
+                    detalle = f"{entregados} recursos entregados a {medico.nombre}"
                 elif bloqueadas:
                     detalle = "Fuera del permiso de la paciente: no se consultó"
                 else:
@@ -309,32 +326,54 @@ def _efecto(sim: Simulacion, nodo: str) -> None:
 
         case "t_guardar":
             hora = _avanzar(sim, 4)
-            ctx.rda = crear_rda(paciente, ctx.nota, hora, ctx.recursos)
+            ctx.rda = _crear_rda(sim, hora)
             _auditar(
-                sim, hora, MEDICO.nombre, "Atención guardada",
-                f"En Hilo Clínico. Urgencias, {MEDICO.organizacion} ({MEDICO.ciudad})", "ok",
+                sim, hora, medico.nombre, "Atención guardada",
+                f"En Hilo Clínico. Urgencias, {medico.organizacion} ({medico.ciudad})", "ok",
             )
 
         case "t_envio":
             hora = _avanzar(sim, 4)
-            ctx.rda = crear_rda(paciente, ctx.nota, hora, ctx.recursos)
+            ctx.rda = _crear_rda(sim, hora)
             ctx.envio = crear_envio_ips(ctx.rda, hora)
             cantidad = len(ctx.envio.entry)
-            ctx.log.append(Peticion("dest", "Bundle", "POST", ENDPOINT_IPS, 201, cantidad))
+            endpoint = endpoint_de(medico.organizacion)
+            ctx.log.append(Peticion("dest", "Bundle", "POST", endpoint, 201, cantidad))
             _auditar(
                 sim, hora, "Adaptador FHIR", "Atención enviada al sistema de la IPS",
-                f"POST de un Bundle con {cantidad} recursos a {ENDPOINT_IPS}: 201 Created "
+                f"POST de un Bundle con {cantidad} recursos a {endpoint}: 201 Created "
                 "(envío simulado). Hilo Clínico guarda solo la referencia.",
                 "ok",
             )
 
         case "t_cerrar":
             if ctx.rda is None:
-                ctx.rda = crear_rda(paciente, ctx.nota, _avanzar(sim, 4), ctx.recursos)
+                ctx.rda = _crear_rda(sim, _avanzar(sim, 4))
             _auditar(
                 sim, _avanzar(sim, 2), "Hilo Clínico", "RDA enviado al IHCE",
                 "Resumen Digital de Atención recibido (envío simulado)", "ok",
             )
+
+
+def _documento_del_caso(medico: Profesional) -> str:
+    """La cédula que el visor trae escrita: la del primer caso de ese médico."""
+    return next((c.documento for c in CASOS if c.medico == medico.id), Borrador.documento)
+
+
+def _sugerir_nota(borrador: Borrador, documento: str) -> None:
+    """Si el médico no ha escrito su propia nota, el visor le sugiere la del caso."""
+    sugeridas = {NOTA_POR_DEFECTO, *(c.nota for c in CASOS)}
+    caso = caso_de(documento)
+    if caso and borrador.nota in sugeridas:
+        borrador.nota = caso.nota
+
+
+def _crear_rda(sim: Simulacion, hora: datetime) -> Bundle:
+    ctx = sim.ctx
+    paciente = ctx.mpi.paciente
+    caso = caso_de(paciente.documento)
+    extra = {"motivo": caso.motivo} if caso else {}
+    return crear_rda(paciente, ctx.nota, hora, ctx.recursos, medico=sim.medico, **extra)
 
 
 _OCULTOS_EN_RUTA = ("start", "g_join", "g_dj")

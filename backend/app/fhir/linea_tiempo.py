@@ -1,7 +1,7 @@
 """Línea de tiempo clínica: lo que el médico ve en el visor.
 
 Se arma solo con los recursos que el consentimiento permitió traer. Agrupa los
-exámenes de una misma orden en un item, une cada Encounter con su Condition, y deja
+analitos de una misma orden de laboratorio en un item, une cada Encounter con su Condition, y deja
 las alergias y la cobertura aparte porque se muestran en un lugar destacado.
 """
 
@@ -54,24 +54,26 @@ def linea_de_tiempo(recursos: list[Resource], hoy: date) -> LineaTiempo:
 
     items: list[Item] = []
 
-    observaciones = de_tipo("Observation")
-    if observaciones:
-        orden = observaciones[0].identifier[0].value
+    ordenes: dict[str, list[Resource]] = {}
+    for observacion in de_tipo("Observation"):
+        ordenes.setdefault(observacion.identifier[0].value, []).append(observacion)
+    for orden, observaciones in ordenes.items():
+        primera = observaciones[0]
         items.append(
             Item(
                 id=f"tl-lab-{orden}",
-                fecha=_iso(observaciones[0].effectiveDateTime),
+                fecha=_iso(primera.effectiveDateTime),
                 tipo="laboratorio",
                 fuente="lab",
-                titulo="Hemograma y proteína C reactiva",
-                subtitulo=f"{len(observaciones)} analitos · {observaciones[0].performer[0].display}",
+                titulo=primera.basedOn[0].display if primera.basedOn else "Laboratorio",
+                subtitulo=f"{len(observaciones)} analitos · {primera.performer[0].display}",
                 detalle=[("Orden", orden)],
                 recursos=observaciones,
                 analitos=[
                     {
                         "nombre": o.code.text,
                         "valor": float(o.valueQuantity.value),
-                        "unidad": o.valueQuantity.unit,
+                        "unidad": o.valueQuantity.unit or "",
                         "bandera": o.interpretation[0].coding[0].code,
                     }
                     for o in observaciones

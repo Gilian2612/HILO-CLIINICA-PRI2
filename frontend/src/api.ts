@@ -55,6 +55,16 @@ export interface Medico {
   organizacion: string
   ciudad: string
   display: string
+  /** URL base FHIR de su clínica: a donde se envía la atención. */
+  endpoint: string
+}
+/** Caso de ejemplo: quién llega, a qué médico y por qué (ver README). */
+export interface Caso {
+  documento: string
+  nombre: string
+  medico: string
+  motivo: string
+  nota: string
 }
 export interface IpsRed {
   nombre: string
@@ -66,7 +76,10 @@ export interface IpsRed {
 export interface Catalogo {
   fuentes: Fuente[]
   categorias: Categoria[]
+  /** El médico de turno por defecto (Dr. Mateo Vargas). */
   medico: Medico
+  medicos: Medico[]
+  casos: Caso[]
   red: { endpoint: string; ips: IpsRed[] }
 }
 
@@ -180,6 +193,8 @@ export interface Contexto {
 export interface Simulacion {
   id: string
   escenario: EscenarioId
+  /** Quien atiende en esta simulación (se elige al crearla). */
+  medico: Medico
   inicio: string
   ahora: string
   nodo: string
@@ -227,8 +242,8 @@ async function pedir<T>(metodo: string, ruta: string, cuerpo?: unknown): Promise
 export const getProceso = () => pedir<Proceso>('GET', '/proceso')
 export const getCatalogo = () => pedir<Catalogo>('GET', '/catalogo')
 
-export const crearSimulacion = (escenario: EscenarioId, inicio?: string) =>
-  pedir<Simulacion>('POST', '/simulaciones', inicio ? { escenario, inicio } : { escenario })
+export const crearSimulacion = (escenario: EscenarioId, opciones: { inicio?: string; medico?: string } = {}) =>
+  pedir<Simulacion>('POST', '/simulaciones', { escenario, ...opciones })
 export const getSimulacion = (id: string) => pedir<Simulacion>('GET', `/simulaciones/${id}`)
 export const borrarSimulacion = (id: string) => pedir<void>('DELETE', `/simulaciones/${id}`)
 

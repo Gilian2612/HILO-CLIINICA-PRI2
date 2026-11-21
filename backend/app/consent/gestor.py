@@ -5,7 +5,7 @@ from typing import Literal
 
 from fhir.resources.R4B.consent import Consent
 
-from app.actores import MEDICO
+from app.actores import MEDICO, Profesional
 from app.consent.categorias import tipos_de
 from app.mpi import PacienteMaestro
 
@@ -18,9 +18,14 @@ PARTICIPACION = "http://terminology.hl7.org/CodeSystem/v3-ParticipationType"
 
 
 def crear_consentimiento(
-    paciente: PacienteMaestro, categorias: list[str], modo: Modo, ahora: datetime
+    paciente: PacienteMaestro,
+    categorias: list[str],
+    modo: Modo,
+    ahora: datetime,
+    *,
+    medico: Profesional = MEDICO,
 ) -> Consent:
-    """Arma un Consent R4 que permite al médico ver los tipos de las categorías elegidas.
+    """Arma un Consent R4 que permite al médico (`medico`) ver los tipos de las categorías elegidas.
 
     - modo "paciente": lo otorga la paciente desde su app.
     - modo "emergencia": lo abre el médico por urgencia vital, sin autorización previa.
@@ -37,14 +42,14 @@ def crear_consentimiento(
         category=[{"coding": [{"system": LOINC, "code": "59284-0", "display": "Consent Document"}]}],
         patient={"reference": f"Patient/{paciente.id}"},
         dateTime=ahora,
-        performer=[{"display": MEDICO.nombre if emergencia else paciente.nombre}],
+        performer=[{"display": medico.nombre if emergencia else paciente.nombre}],
         provision={
             "type": "permit",
             "period": {"start": ahora, "end": ahora + VIGENCIA},
             "actor": [
                 {
                     "role": {"coding": [{"system": PARTICIPACION, "code": "PRCP"}]},
-                    "reference": {"display": MEDICO.display},
+                    "reference": {"display": medico.display},
                 }
             ],
             "class": [{"code": tipo} for tipo in tipos_de(categorias)],

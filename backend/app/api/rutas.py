@@ -4,9 +4,10 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, HTTPException, Response, status
 
-from app.actores import MEDICO
+from app.actores import MEDICO, MEDICOS
 from app.api.almacen import Entrada, almacen
-from app.api.esquemas import Accion, CambioBorrador, CrearSimulacion
+from app.api.esquemas import Accion, CambioBorrador, CrearSimulacion, serializar_medico
+from app.casos import CASOS
 from app.consent import CATEGORIAS
 from app.fhir import ENDPOINT_IPS, RED_IPS
 from app.process import (
@@ -44,11 +45,13 @@ def proceso() -> dict:
 
 @router.get("/catalogo")
 def catalogo() -> dict:
-    """Fuentes de la red, categorías de consentimiento, médico de turno y red de IPS."""
+    """Fuentes, categorías de consentimiento, médico de turno, médicos, casos y red de IPS."""
     return {
         "fuentes": [asdict(f) for f in FUENTES.values()],
         "categorias": [asdict(c) for c in CATEGORIAS],
-        "medico": {**asdict(MEDICO), "display": MEDICO.display},
+        "medico": serializar_medico(MEDICO),
+        "medicos": [serializar_medico(m) for m in MEDICOS.values()],
+        "casos": [asdict(c) for c in CASOS],
         "red": {"endpoint": ENDPOINT_IPS, "ips": [asdict(i) for i in RED_IPS]},
     }
 
@@ -65,7 +68,7 @@ def _entrada(id: str) -> Entrada:
 
 @router.post("/simulaciones", status_code=status.HTTP_201_CREATED)
 def crear_simulacion(cuerpo: CrearSimulacion) -> dict:
-    id = almacen.crear(nueva_simulacion(cuerpo.escenario, cuerpo.inicio))
+    id = almacen.crear(nueva_simulacion(cuerpo.escenario, cuerpo.inicio, cuerpo.medico))
     return almacen.serializar(id, _entrada(id))
 
 
