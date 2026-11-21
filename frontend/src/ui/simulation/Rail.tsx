@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Check, RotateCcw, SkipForward } from 'lucide-react'
-import type { Proceso, Simulacion } from '../../api'
+import type { Catalogo, Proceso, Simulacion } from '../../api'
 import type { ControlSimulacion } from '../../useSimulacion'
 
 type Actor = 'medico' | 'hilo' | 'paciente'
@@ -28,7 +28,7 @@ function respuesta(nodo: string, sim: Simulacion) {
   return ''
 }
 
-export function Rail({ sim, proceso, control }: { sim: Simulacion; proceso: Proceso; control: ControlSimulacion }) {
+export function Rail({ sim, proceso, catalogo, control }: { sim: Simulacion; proceso: Proceso; catalogo: Catalogo; control: ControlSimulacion }) {
   const lista = useRef<HTMLOListElement>(null)
   const actual = sim.ruta.indexOf(sim.nodo)
   const nodo = (id: string) => proceso.nodos.find((n) => n.id === id)!
@@ -41,6 +41,14 @@ export function Rail({ sim, proceso, control }: { sim: Simulacion; proceso: Proc
     <aside className="rail" aria-label="Pasos del proceso">
       <h2 className="rail-title">Proceso TO-BE</h2>
       <p className="rail-sub">Urgencias en una IPS que no conoce a la paciente.</p>
+      <label className="medico-pick">
+        <span>Atiende</span>
+        <select value={sim.medico.id} onChange={(ev) => control.reiniciar(undefined, ev.target.value)}>
+          {catalogo.medicos.map((m) => (
+            <option key={m.id} value={m.id}>{m.nombre} · {m.organizacion}</option>
+          ))}
+        </select>
+      </label>
       <ol className="steps" ref={lista}>
         {sim.ruta.map((id, i) => {
           const n = nodo(id)

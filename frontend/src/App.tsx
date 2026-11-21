@@ -80,15 +80,6 @@ export default function App() {
             </label>
           ))}
         </fieldset>
-        <label className="medico-pick">
-          <span>Atiende</span>
-          <select value={sim?.medico.id ?? ''} aria-label="Médico que atiende"
-            onChange={(ev) => control.reiniciar(undefined, ev.target.value)}>
-            {catalogo?.medicos.map((m) => (
-              <option key={m.id} value={m.id}>{m.nombre} · {m.organizacion}</option>
-            ))}
-          </select>
-        </label>
       </header>
 
       {error && !listo && (

@@ -6,7 +6,7 @@ Mariana y Jorge vienen del boceto. Los otros cinco se agregaron para mostrar sit
 
 ## Cómo usar un caso
 
-1. En la cabecera, en **Atiende**, elige el médico. La simulación se reinicia con ese médico y su clínica, y el visor trae escrita la cédula de su caso.
+1. En el panel de pasos (izquierda), en **Atiende**, elige el médico. La simulación se reinicia con ese médico y su clínica, y el visor trae escrita la cédula de su caso.
 2. Elige el **escenario**: con autorización, urgencia vital o la paciente no autoriza.
 3. Busca la cédula. También puedes escribir cualquier otra de la tabla: el campo sugiere las 7.
 4. Al encontrar al paciente, el visor propone la nota clínica del caso, salvo que ya hayas escrito la tuya.

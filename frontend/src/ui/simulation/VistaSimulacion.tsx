@@ -53,7 +53,7 @@ export function VistaSimulacion({
 
   return (
     <main className="view view-sim" id="main">
-      <Rail sim={sim} proceso={proceso} control={control} />
+      <Rail sim={sim} proceso={proceso} catalogo={catalogo} control={control} />
       <div className="pane-switch" role="tablist" aria-label="Pantalla">
         <button role="tab" aria-selected={pantalla === 'medico'} className={pantalla === 'medico' ? 'is-on' : ''}
           onClick={() => setPantalla('medico')}>
