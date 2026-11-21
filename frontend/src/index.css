@@ -2,6 +2,7 @@
 @import '@fontsource-variable/urbanist';
 @import '@fontsource-variable/fraunces/full.css';
 @import './styles/boceto.css';
+@import './styles/tema-azul.css';
 
 /* Fontsource registra las fuentes como "… Variable"; se anteponen a las del boceto. */
 :root {

@@ -1,0 +1,24 @@
+/* Tema azul: reemplaza la paleta morada del boceto por tonos azules.
+   Se carga después de boceto.css; para volver al morado original basta quitar su @import en index.css. */
+
+:root {
+  --ink: #1d5b8f;        /* antes #3b365f: texto principal, botón primario, fondo de "La capa por dentro" */
+  --ink-soft: #45708f;   /* antes #57537f: texto secundario */
+  --blue: #8bb8de;       /* antes #8aa3d0 */
+  --blue-deep: #2f6a9c;  /* antes #44598f */
+  --field: #6f93b5;      /* antes #7687b0 */
+  --shadow: 0 22px 44px -26px rgba(29, 91, 143, 0.38);
+}
+
+/* Colores fijos del boceto que no pasaban por variables */
+.btn-primary:hover { background: #164a75; }
+.btn-primary:disabled { background: #a7c0d8; }
+
+.hood { color: #e8f2fc; }
+.hood-tabs button { color: #cfe2f3; }
+.hood-empty { color: #cfe2f3; }
+.log thead th { color: #bcd6ec; }
+.log .source-tag { color: #e8f2fc; }
+.json { color: #e1eefa; }
+
+.bp-token { filter: drop-shadow(0 2px 3px rgba(29, 91, 143, 0.45)); }
