@@ -31,21 +31,29 @@ def test_ips_entrega_json_propio_con_ids_locales_y_fechas_ddmmaaaa():
     assert paciente["id"] == "P-00417"
     assert paciente["documento"] == "CC-1.032.456.789"
     assert paciente["nacimiento"] == "14/03/1992"
-    assert len(datos["alergias"]) == 1
-    assert len(datos["atenciones"]) == 2
-    assert len(datos["formulas"]) == 1
+    de_mariana = lambda filas: [f for f in filas if f["pid"] == "P-00417"]  # noqa: E731
+    assert len(de_mariana(datos["alergias"])) == 1
+    assert len(de_mariana(datos["atenciones"])) == 2
+    assert len(de_mariana(datos["formulas"])) == 1
 
 
 def test_lab_entrega_csv_separado_por_punto_y_coma():
     assert lab.CSV.splitlines()[0] == (
-        "orden;doc_paciente;fecha_hora;analito;valor;unidad;ref_min;ref_max"
+        "orden;doc_paciente;fecha_hora;examen;analito;valor;unidad;ref_min;ref_max"
     )
 
 
 def test_lab_parsea_el_csv_en_filas():
-    filas = lab.filas()
+    filas = [f for f in lab.filas() if f["doc_paciente"] == "1032456789"]
     assert len(filas) == 4
+    assert filas[0]["examen"] == "Hemograma y proteína C reactiva"
     assert filas[0]["orden"] == "LB-2291"
     assert filas[0]["analito"] == "Leucocitos"
     assert filas[0]["valor"] == "13.8"
     assert filas[3]["analito"] == "Proteína C reactiva"
+
+
+def test_las_fuentes_tienen_a_los_siete_pacientes_de_ejemplo():
+    assert len(eps.afiliados()) == 7
+    assert len(ips.datos()["pacientes"]) == 5  # Jorge y Andrés no están en la IPS
+    assert len({f["doc_paciente"] for f in lab.filas()}) == 5  # Jorge y Luisa no tienen laboratorio

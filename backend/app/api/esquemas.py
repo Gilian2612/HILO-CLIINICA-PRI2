@@ -9,9 +9,11 @@ from datetime import datetime
 from typing import Any, Literal
 
 from fhir.resources.R4B.resource import Resource
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
-from app.fhir import LineaTiempo
+from app.actores import MEDICOS, Profesional
+
+from app.fhir import LineaTiempo, endpoint_de
 from app.process import Escenario, Simulacion, ruta
 
 # Peticiones
@@ -20,6 +22,14 @@ from app.process import Escenario, Simulacion, ruta
 class CrearSimulacion(BaseModel):
     escenario: Escenario = "consentimiento"
     inicio: datetime | None = None
+    medico: str | None = None  # id de app.actores.MEDICOS; None = el médico de turno
+
+    @field_validator("medico")
+    @classmethod
+    def _medico_conocido(cls, valor: str | None) -> str | None:
+        if valor is not None and valor not in MEDICOS:
+            raise ValueError(f"Médico desconocido: {valor}")
+        return valor
 
 
 class Accion(BaseModel):
@@ -42,6 +52,10 @@ class CambioBorrador(BaseModel):
 
 
 # Serialización
+
+
+def serializar_medico(medico: Profesional) -> dict:
+    return {**asdict(medico), "display": medico.display, "endpoint": endpoint_de(medico.organizacion)}
 
 
 def fhir_json(recurso: Resource | None) -> dict | None:
@@ -79,6 +93,7 @@ def serializar_simulacion(id: str, sim: Simulacion, puede_volver: bool) -> dict[
     return {
         "id": id,
         "escenario": sim.escenario,
+        "medico": serializar_medico(sim.medico),
         "inicio": sim.inicio.isoformat(),
         "ahora": sim.ahora().isoformat(),
         "nodo": sim.nodo,

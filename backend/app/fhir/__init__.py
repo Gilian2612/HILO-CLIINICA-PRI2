@@ -3,7 +3,7 @@
 from app.fhir.envio import crear_envio_ips
 from app.fhir.linea_tiempo import Alergia, Item, LineaTiempo, linea_de_tiempo
 from app.fhir.rda import crear_rda
-from app.fhir.red import ENDPOINT_IPS, RED_IPS, IPSRed
+from app.fhir.red import ENDPOINT_IPS, RED_IPS, IPSRed, endpoint_de
 
 __all__ = [
     "ENDPOINT_IPS",
@@ -14,5 +14,6 @@ __all__ = [
     "LineaTiempo",
     "crear_envio_ips",
     "crear_rda",
+    "endpoint_de",
     "linea_de_tiempo",
 ]

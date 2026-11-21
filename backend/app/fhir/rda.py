@@ -10,7 +10,7 @@ from datetime import datetime
 from fhir.resources.R4B.bundle import Bundle
 from fhir.resources.R4B.resource import Resource
 
-from app.actores import MEDICO
+from app.actores import MEDICO, Profesional
 from app.mpi import PacienteMaestro
 
 MOTIVO_URGENCIAS = "Dolor abdominal y fiebre"
@@ -21,7 +21,13 @@ def solo_digitos(valor: str) -> str:
 
 
 def crear_rda(
-    paciente: PacienteMaestro, nota: str, ahora: datetime, recursos: list[Resource]
+    paciente: PacienteMaestro,
+    nota: str,
+    ahora: datetime,
+    recursos: list[Resource],
+    *,
+    medico: Profesional = MEDICO,
+    motivo: str = MOTIVO_URGENCIAS,
 ) -> Bundle:
     sello = solo_digitos(ahora.isoformat())[:12]
     sujeto = {"reference": f"Patient/{paciente.id}"}
@@ -36,7 +42,7 @@ def crear_rda(
                 "type": {"text": "Resumen Digital de Atención en Salud (RDA)"},
                 "subject": sujeto,
                 "date": ahora,
-                "author": [{"display": MEDICO.display}],
+                "author": [{"display": medico.display}],
                 "title": "Atención de urgencias",
             },
         },
@@ -48,8 +54,8 @@ def crear_rda(
                 "class": {"code": "EMER", "display": "Urgencias"},
                 "subject": sujeto,
                 "period": {"start": ahora},
-                "serviceProvider": {"display": f"{MEDICO.organizacion}, {MEDICO.ciudad}"},
-                "reasonCode": [{"text": MOTIVO_URGENCIAS}],
+                "serviceProvider": {"display": f"{medico.organizacion}, {medico.ciudad}"},
+                "reasonCode": [{"text": motivo}],
             },
         },
     ]

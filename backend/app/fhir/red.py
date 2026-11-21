@@ -22,3 +22,9 @@ RED_IPS: list[IPSRed] = [
     IPSRed("Hospital Simón Bolívar", "Bogotá", "fhir.hsimonbolivar.example/r4", "Ejemplo", "warn"),
     IPSRed("Clínica de Marly", "Bogotá", "fhir.marly.example/r4", "Ejemplo", "warn"),
 ]
+
+
+def endpoint_de(organizacion: str) -> str:
+    """URL base FHIR de una IPS de la red (a donde se envía la atención)."""
+    ips = next(i for i in RED_IPS if i.nombre == organizacion)
+    return f"https://{ips.endpoint}"

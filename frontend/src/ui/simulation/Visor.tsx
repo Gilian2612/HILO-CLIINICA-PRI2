@@ -43,7 +43,7 @@ export interface PropsVisor {
 export function Visor({ sim, catalogo, control, alInspeccionar, irAImpacto }: PropsVisor) {
   const e = etapa(sim)
   const { ctx } = sim
-  const { medico } = catalogo
+  const { medico } = sim
   const paciente = ctx.mpi?.paciente
   const primerNombre = paciente?.nombres.split(' ')[0] ?? ''
   const turno = sim.estado === 'waiting' && (sim.nodo === 't_buscar' || sim.nodo === 't_atender')
@@ -84,7 +84,7 @@ export function Visor({ sim, catalogo, control, alInspeccionar, irAImpacto }: Pr
 
       <div className="visor-body">
         <AnimatePresence mode="wait">
-          {e === 'search' && <Busqueda key="search" sim={sim} control={control} />}
+          {e === 'search' && <Busqueda catalogo={catalogo} key="search" sim={sim} control={control} />}
           {e === 'matching' && <Union key="matching" sim={sim} catalogo={catalogo} />}
           {e === 'waiting' && (
             <Aviso key="waiting" icono={<Lock size={22} />} tono="lock"
@@ -155,7 +155,8 @@ function EstadoAcceso({ sim, etapa: e }: { sim: Simulacion; etapa: Etapa }) {
   return <span className="badge badge-lock"><Lock size={14} aria-hidden="true" />Historia bloqueada</span>
 }
 
-function Busqueda({ sim, control }: { sim: Simulacion; control: ControlSimulacion }) {
+function Busqueda({ sim, catalogo, control }: { sim: Simulacion; catalogo: Catalogo; control: ControlSimulacion }) {
+  const caso = catalogo.casos.find((c) => c.medico === sim.medico.id) ?? catalogo.casos[0]
   const { borrador, error_busqueda } = sim.ctx
   const error =
     error_busqueda === 'corto'
@@ -184,12 +185,17 @@ function Busqueda({ sim, control }: { sim: Simulacion; control: ControlSimulacio
         </label>
         <label className="field">
           <span>Número de documento</span>
-          <input inputMode="numeric" autoComplete="off" value={borrador.documento} aria-invalid={!!error}
+          <input inputMode="numeric" autoComplete="off" list="casos-ejemplo" value={borrador.documento} aria-invalid={!!error}
             aria-describedby="doc-help" onChange={(ev) => control.editarBorrador({ documento: ev.target.value })} />
         </label>
       </div>
+      <datalist id="casos-ejemplo">
+        {catalogo.casos.map((c) => (
+          <option key={c.documento} value={c.documento}>{c.nombre}</option>
+        ))}
+      </datalist>
       <p id="doc-help" className={error ? 'field-error' : 'field-help'} role={error ? 'alert' : undefined}>
-        {error || 'La paciente del ejemplo es Mariana, con cédula 1032456789.'}
+        {error || `El caso de ejemplo en esta clínica es ${caso.nombre}, con cédula ${caso.documento}.`}
       </p>
       <label className="check">
         <input type="checkbox" checked={borrador.emergencia}

@@ -23,7 +23,8 @@ export interface ControlSimulacion {
   setAuto: (v: boolean) => void
   paso: () => void
   atras: () => void
-  reiniciar: (escenario?: EscenarioId) => void
+  /** Crea una simulación nueva; conserva el escenario y el médico que no se pasen. */
+  reiniciar: (escenario?: EscenarioId, medico?: string) => void
   actuar: (accion: Accion) => void
   editarBorrador: (cambios: CambioBorrador) => void
   revocar: () => void
@@ -52,9 +53,11 @@ export function useSimulacion(proceso: Proceso | null, alError: (e: unknown) => 
   )
 
   const reiniciar = useCallback(
-    (escenario?: EscenarioId) =>
+    (escenario?: EscenarioId, medico?: string) =>
       encolar(async (s) => {
-        const nueva = await api.crearSimulacion(escenario ?? s?.escenario ?? 'consentimiento')
+        const nueva = await api.crearSimulacion(escenario ?? s?.escenario ?? 'consentimiento', {
+          medico: medico ?? s?.medico.id,
+        })
         if (s) api.borrarSimulacion(s.id).catch(() => {})
         setAuto(true)
         return nueva
