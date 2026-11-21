@@ -34,3 +34,4 @@ npm-debug.log*
 !.vscode/settings.json
 *.egg-info/
 .pytest_cache/
+CLAUDE.md
