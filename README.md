@@ -129,7 +129,7 @@ Lo que gana la atención: el médico ve a tiempo la **alergia grave a la penicil
 
 ### Más casos de ejemplo
 
-Además de Mariana y Jorge hay **cinco pacientes más**, cada uno atendido por un médico de urgencias de una clínica distinta de la red. El médico se elige en la cabecera (**Atiende**) o con `medico` al crear la simulación. Cédulas, clínicas, médicos y qué muestra cada caso: **[CASOS.md](CASOS.md)**.
+Además de Mariana y Jorge hay **cinco pacientes más**, cada uno atendido por un médico de urgencias de una clínica distinta de la red. El médico se elige en el panel de pasos (**Atiende**) o con `medico` al crear la simulación. Cédulas, clínicas, médicos y qué muestra cada caso: **[CASOS.md](CASOS.md)**.
 
 | Cédula | Paciente | Clínica | Médico |
 |---|---|---|---|
@@ -239,6 +239,18 @@ assets/      diagrama BPMN (PNG y .bpmn editable)
 backend/     API en Python (FastAPI): toda la lógica + tests
 frontend/    interfaz en React (réplica visual del boceto)
 boceto.html  prototipo de referencia (fuente de verdad funcional y visual)
+```
+
+## Versión en un solo archivo: `latest.html`
+
+`latest.html` es la última versión completa del prototipo en **un solo archivo**, sin servidor: se abre con doble clic. Incluye el frontend compilado (JS, CSS, fuentes y SVG incrustados) y **el mismo código Python de `backend/app`**, que corre en el navegador con [Pyodide](https://pyodide.org) (Python en WebAssembly). Las llamadas `fetch('/api/...')` del frontend las atiende `scripts/navegador/despachador.py` con las funciones de `app/api/rutas.py`; `scripts/navegador/fastapi.py` reemplaza a FastAPI, que ahí no hace falta.
+
+- **Necesita internet** al abrirlo: Pyodide se descarga de jsDelivr y `fhir.resources` de PyPI. La primera carga tarda unos 10 s (se muestra un aviso).
+- La lógica no se duplica: si cambia el backend o el frontend, se regenera.
+
+```bash
+python3 scripts/generar_latest.py              # compila el frontend y genera latest.html
+python3 scripts/generar_latest.py --sin-build  # usa frontend/dist tal como está
 ```
 
 ## Cómo ejecutar
